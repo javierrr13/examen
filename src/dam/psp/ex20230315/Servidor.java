@@ -1,5 +1,7 @@
 package dam.psp.ex20230315;
 
+
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -15,8 +17,11 @@ public class Servidor {
 	static KeyStore ks;
 	
 	public static void main(String[] args) throws IOException, KeyStoreException, NoSuchAlgorithmException, CertificateException {
+		
+	
+		
 		ks = KeyStore.getInstance(KeyStore.getDefaultType());
-		ks.load(null, null);
+		ks.load(new FileInputStream(System.getProperty("user.home")+"/Desktop/keystore.p12"), "practicas".toCharArray());
 		try (ServerSocket serverSocket = new ServerSocket(9000)) {
 			ExecutorService executor = Executors.newFixedThreadPool(100);
 			System.out.println("Servidor ECHO escuchando en puerto 9000");
@@ -24,7 +29,9 @@ public class Servidor {
 				Socket socket = serverSocket.accept();
 				executor.submit(new Peticion(socket));
 			}
+			
 		}
+		
 	}
 
 }

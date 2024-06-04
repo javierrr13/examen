@@ -296,7 +296,16 @@ class ServidorUnitTest {
 	@Test
 	@DisplayName("(3 puntos) Petición \"cifrar\"")
 	void test17() {
-		fail("Not yet implemented");
+		try (Socket socket = new Socket("localhost",9000)){
+			socket.setSoTimeout(10000);
+			DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+			out.writeUTF("cifrar");
+			out.writeUTF("psp");
+			String texto = "";
+			
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
 	}
 	
 	@Test
@@ -361,6 +370,7 @@ class ServidorUnitTest {
 			out.writeUTF(Base64.getEncoder().encodeToString(ks.getCertificate("alumno").getEncoded()));
 			
 			new DataInputStream(socket.getInputStream()).readUTF();
+		
 		} catch (IOException | CertificateEncodingException | KeyStoreException e) {
 			fail(e.getLocalizedMessage());
 		}

@@ -1,6 +1,7 @@
 package dam.psp.ex20230315;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.EOFException;
@@ -8,13 +9,21 @@ import java.io.IOException;
 import java.io.UTFDataFormatException;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.security.InvalidKeyException;
 import java.security.KeyStoreException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
 import java.security.cert.Certificate;
+
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.util.Base64;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 
 public class Peticion implements Runnable {
 
@@ -42,7 +51,7 @@ public class Peticion implements Runnable {
 				peticionCert();
 				break;
 			case "cifrar":
-
+				peticionCifrar();
 				break;
 			default:
 				enviarRespuesta(String.format("ERROR:'%s' no se reconoce como una petición válida", peticion));
@@ -65,26 +74,6 @@ public class Peticion implements Runnable {
 		}
 	}
 
-//	private void peticionHash() {
-//		try {
-//			String algoritmo = in.readUTF();
-//			MessageDigest md = MessageDigest.getInstance(algoritmo);
-//			byte [] bytes = in.readAllBytes();
-//			if (bytes.length == 0)
-//				enviarRespuesta("ERROR:Se esperaban datos");
-//			else {
-//				byte [] hash = md.digest(bytes);
-//				enviarRespuesta("OK:" + Base64.getEncoder().encodeToString(hash));
-//			}
-//		} catch (SocketTimeoutException e) {
-//			enviarRespuesta("ERROR:Read timed out");
-//		} catch (EOFException | NoSuchAlgorithmException e) {
-//			enviarRespuesta("ERROR:Se esperaba un algoritmo");
-//		} catch (IOException e) {
-//			enviarRespuesta("ERROR:" + e.getLocalizedMessage());
-//		} 
-//	}
-	
 	private void peticionHash() {
 		try {
 			String algoritmo = in.readUTF();
@@ -135,4 +124,62 @@ public class Peticion implements Runnable {
 		}
 	}
 
+	private void peticionCifrar() {
+	    try {
+	        String alias = in.readUTF();
+	        if(!alias.equals("psp")) {
+	        	enviarRespuesta(String.format("ERROR: %s no contiene una clave RSA", alias));
+	        }else {
+	        	try {
+		            Certificate cert = Servidor.ks.getCertificate(alias);
+		            
+		            if (cert == null) {
+		            	 enviarRespuesta(String.format("ERROR:'%s' no es un certificado", alias));
+		            } else {	               
+		                PublicKey key = cert.getPublicKey();
+		                if (key.getAlgorithm().equals("RSA")) {
+		                	cifrar(key);
+		                } else {
+		                    enviarRespuesta(String.format("ERROR:'%s' no contiene una clave RSA", alias));
+		                }
+		            }
+		        } catch (KeyStoreException e) {
+		            enviarRespuesta("ERROR:" + e.getLocalizedMessage());
+		        }
+	        }
+	        
+	    } catch (SocketTimeoutException e) {
+	        enviarRespuesta("ERROR:Read timed out");
+	    } catch (EOFException e) {
+	        enviarRespuesta("ERROR:Se esperaba un alias");
+	    } catch (UTFDataFormatException e) {
+	        enviarRespuesta("ERROR:formato alias incorrecto");
+	    } catch (IOException e) {
+	        enviarRespuesta("ERROR:" + e.getLocalizedMessage());
+	    }
+	}
+
+	private void cifrar(PublicKey pk) {
+	    try {
+	        Cipher cp = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+	        cp.init(Cipher.ENCRYPT_MODE, pk);
+	        int n;
+	        int total = 0;
+	        byte buffer [] = new byte[256];
+	        while ((n = in.read(buffer)) != -1) {
+	         total+=n;
+	        }
+
+	        if (total<0) {
+	            enviarRespuesta("ERROR:Se esperaban datos");
+	        }else {
+	            enviarRespuesta("ERROR:Se esperaban datos" );
+	        }
+
+	    } catch (InvalidKeyException | IOException e) {
+	        enviarRespuesta("ERROR:" + e.getLocalizedMessage());
+	    } catch (NoSuchAlgorithmException | NoSuchPaddingException e) {
+	        enviarRespuesta("ERROR:No se pudo inicializar el cifrado");
+	    }
+	}
 }
