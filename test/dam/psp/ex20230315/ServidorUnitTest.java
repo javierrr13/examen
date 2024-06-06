@@ -301,8 +301,15 @@ class ServidorUnitTest {
 			DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 			out.writeUTF("cifrar");
 			out.writeUTF("psp");
-			String texto = "";
+			String texto = "En un lugar de la Mancha, de cuyo nombre no quiero acordarme, no ha mucho tiempo que vivía un "
+					+ "hidalgo de los de lanza en astillero, adarga antigua, rocín flaco y galgo corredor. Una olla de algo"
+					+ " más vaca que carnero, salpicón las más noches, duelos y quebrantos los sábados, lentejas los "
+					+ "viernes, algún palomino de añadidura los domingos, consumían las tres partes de su hacienda.\r\n"
+					+ "";
+			out.writeUTF(texto);
+			socket.shutdownOutput();
 			
+			assertEquals("OK:Texto cifrado correctamente", new DataInputStream(socket.getInputStream()).readUTF());
 		} catch (Exception e) {
 			// TODO: handle exception
 		}
